@@ -30,64 +30,72 @@ def _pick_random_video() -> str:
     return os.path.join(VIDEO_DIR, chosen)
 
 
-def mux_audio_with_random_video(
-    audio_path: str,
-    subtitles_path: Optional[str] = None,
-) -> str:
+def _generate_subtitles(text: str, output_path: str) -> str:
     """
-    Use ffmpeg to combine:
-    - random video from VIDEO_DIR
-    - provided audio (audio_path)
-    - optional subtitles (.srt)
+    Generate a simple SRT subtitle file from the given text.
+    The subtitle will display for the entire duration of the video.
+    Returns the path to the generated SRT file.
+    """
+    srt_content = f"""1
+00:00:00,000 --> 00:10:00,000
+{text}
+"""
+    
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(srt_content)
+    
+    return output_path
 
-    The video is automatically cut to match the audio length using -shortest.
-    Returns the output video path.
+
+def create_video_with_audio(text: str) -> str:
     """
-    if not os.path.exists(audio_path):
-        raise FileNotFoundError(f"Audio file '{audio_path}' not found.")
+    Combines final.wav audio with a random video from videos/ directory.
+    Generates subtitles from the provided text and burns them into the video.
+    The video is automatically cut to match the audio length.
+    
+    Args:
+        text: The text to display as subtitles
+        
+    Returns:
+        Path to the output video file
+    """
+    if not os.path.exists(AUDIO_FILE):
+        raise FileNotFoundError(f"Audio file '{AUDIO_FILE}' not found.")
 
     video_path = _pick_random_video()
-
+    
+    # Generate subtitles
     timestamp = int(time.time())
+    srt_filename = f"subtitles_{timestamp}.srt"
+    srt_path = os.path.join(OUTPUT_DIR, srt_filename)
+    _generate_subtitles(text, srt_path)
+
     output_filename = f"final_{timestamp}.mp4"
     output_path = os.path.join(OUTPUT_DIR, output_filename)
 
-    # Build ffmpeg command
-    # -shortest -> stop when the shortest stream ends (usually the audio),
+    # Build ffmpeg command with subtitles burned in
+    # -shortest -> stop when the shortest stream ends (the audio),
     # so the video is automatically cut to match the audio length.
-    if subtitles_path:
-        if not os.path.exists(subtitles_path):
-            raise FileNotFoundError(f"Subtitles file '{subtitles_path}' not found.")
-
-        cmd = [
-            "ffmpeg",
-            "-y",                # overwrite output
-            "-i", video_path,    # input video
-            "-i", audio_path,    # input audio
-            "-vf", f"subtitles={subtitles_path}",  # burn in subtitles
-            "-map", "0:v:0",     # take video from first input
-            "-map", "1:a:0",     # take audio from second input
-            "-c:v", "libx264",
-            "-c:a", "aac",
-            "-shortest",
-            output_path,
-        ]
-    else:
-        cmd = [
-            "ffmpeg",
-            "-y",
-            "-i", video_path,
-            "-i", audio_path,
-            "-map", "0:v:0",
-            "-map", "1:a:0",
-            "-c:v", "libx264",
-            "-c:a", "aac",
-            "-shortest",
-            output_path,
-        ]
+    cmd = [
+        "ffmpeg",
+        "-y",                # overwrite output
+        "-i", video_path,    # input video
+        "-i", AUDIO_FILE,    # input audio
+        "-vf", f"subtitles={srt_path}",  # burn in subtitles
+        "-map", "0:v:0",     # take video from first input
+        "-map", "1:a:0",     # take audio from second input
+        "-c:v", "libx264",
+        "-c:a", "aac",
+        "-shortest",         # cut video to match audio length
+        output_path,
+    ]
 
     print("Running ffmpeg command:", " ".join(cmd))
     subprocess.run(cmd, check=True)
+
+    # Clean up subtitle file
+    if os.path.exists(srt_path):
+        os.remove(srt_path)
 
     print("Saved video:", output_path)
     return output_path
