@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from ffmpeg import create_video_with_audio
 from xtts import generate_voice_clone
@@ -20,6 +21,10 @@ async def health_check():
 async def generate_voice(req: VoiceRequest):
     if(generate_voice_clone(req.text)):
         video_path = create_video_with_audio(req.text)
-        return {"message": "Voice clone generated and saved as final.wav", "video": video_path}
+        return FileResponse(
+            video_path,
+            media_type="video/mp4",
+            filename=video_path.split('/')[-1]
+        )
     else:
         return {"message": "Failed to generate voice clone"}    

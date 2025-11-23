@@ -121,7 +121,7 @@ def create_video_with_audio(text: str,
         "modern": (
             "Alignment=10,"  # Center alignment
             "FontName=Arial Black,"
-            "FontSize=28,"
+            "FontSize=22,"
             "Bold=1,"
             "PrimaryColour=&H00FFFFFF,"  # White
             "OutlineColour=&H00000000,"  # Black outline
@@ -132,7 +132,7 @@ def create_video_with_audio(text: str,
         "bold": (
             "Alignment=10,"
             "FontName=Impact,"
-            "FontSize=32,"
+            "FontSize=28,"
             "Bold=1,"
             "PrimaryColour=&H00FFFF00,"  # Yellow
             "OutlineColour=&H00000000,"
