@@ -1,8 +1,9 @@
 venv/*
-final.wav
+./final.wav
 __pycache__/
 *.pyc
 .DS_Store
 .idea/
 .vscode/
 videos/
+outputs/
